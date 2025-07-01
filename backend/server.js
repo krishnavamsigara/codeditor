@@ -9,7 +9,7 @@ import { Server } from 'socket.io';
 dotenv.config();
 
 const app = express();
-const httpServer = createServer(app);
+const server = createServer(app);
 const io = new Server(httpServer, {
   cors: { origin: '*' },
 });
@@ -120,6 +120,11 @@ app.post('/run', async (req, res) => {
   }
 });
 
-httpServer.listen(5000, () => {
+if(process.env.NODE_ENV !== "production"){
+  server.listen(5000, () => {
   console.log('🚀 Server running on http://localhost:5000');
 });
+}
+export default server
+
+

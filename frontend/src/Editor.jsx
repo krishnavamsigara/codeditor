@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import './codeEditor.css';
 
-const socket = io('https://codeditor-backend.vercel.app/ ');
+const socket = io('https://codeditor-kappa.vercel.app');
 
 export default function CodeEditor({ roomId = 'room1' }) {
   const [code, setCode] = useState('// Start coding');
@@ -59,7 +59,7 @@ export default function CodeEditor({ roomId = 'room1' }) {
 
   const handleRun = async () => {
     try {
-      const res = await axios.post('https://codeditor-backend.vercel.app/run', {
+      const res = await axios.post('https://codeditor-kappa.vercel.app/run', {
         code,
         language,
         roomId

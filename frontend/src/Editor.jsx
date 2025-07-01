@@ -93,7 +93,7 @@ export default function CodeEditor({ roomId = 'room1' }) {
           <div className="control-group">
             <label>Font Size:</label>
             <select value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))}>
-              <option value={12}>12</option>
+              
               <option value={14}>14</option>
               <option value={16}>16</option>
               <option value={18}>18</option>

@@ -9,8 +9,8 @@ import { Server } from 'socket.io';
 dotenv.config();
 
 const app = express();
-const server = createServer(app);
-const io = new Server(httpServer, {
+const server = createServer(app); // ✅ Use consistent server variable
+const io = new Server(server, {
   cors: { origin: '*' },
 });
 
@@ -47,7 +47,6 @@ io.on('connection', (socket) => {
       rooms[roomId] = { code: '// Start coding', language: 'javascript' };
     }
 
-    // Send current state to newly joined user
     socket.emit('sync', rooms[roomId]);
   });
 
@@ -100,31 +99,30 @@ app.post('/run', async (req, res) => {
       });
 
       result = status.data;
-      if (result.status.id >= 3) break; // Done
-      await new Promise(r => setTimeout(r, 1500)); // Wait 1.5 sec
+      if (result.status.id >= 3) break;
+      await new Promise(r => setTimeout(r, 1500));
     }
 
     const output = result.stdout || result.stderr || result.compile_output || 'No output';
 
-    // 🔄 Emit to everyone in the room
     if (roomId) {
       io.to(roomId).emit('execution-result', output);
     }
 
-    // 📤 Respond to the original sender
     res.json({ output });
-
   } catch (err) {
     console.error('❌ Execution error:', err.message);
     res.status(500).json({ error: 'Execution failed' });
   }
 });
 
-if(process.env.NODE_ENV !== "production"){
-  server.listen(5000, () => {
-  console.log('🚀 Server running on http://localhost:5000');
-});
+// --- Start server locally only ---
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
 }
-export default server
 
-
+// Optional: export for testability or Vercel (even though WebSocket won't work there)
+export default server;

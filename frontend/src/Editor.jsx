@@ -4,7 +4,11 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import './codeEditor.css';
 
-const socket = io('https://codeditor-kappa.vercel.app');
+// ✅ Socket.IO initialization (with Vercel's serverless path)
+const socket = io('https://codeditor-kappa.vercel.app', {
+  path: '/api/socket_io',
+  transports: ['websocket'],
+});
 
 export default function CodeEditor({ roomId = 'room1' }) {
   const [code, setCode] = useState('// Start coding');
@@ -59,14 +63,14 @@ export default function CodeEditor({ roomId = 'room1' }) {
 
   const handleRun = async () => {
     try {
-      const res = await axios.post('https://codeditor-kappa.vercel.app/run', {
+      const res = await axios.post('https://codeditor-kappa.vercel.app/api/run', {
         code,
         language,
-        roomId
+        roomId,
       });
       setOutput(res.data.output);
     } catch (err) {
-      setOutput('Error running code');
+      setOutput('❌ Error running code');
     }
   };
 
@@ -93,7 +97,6 @@ export default function CodeEditor({ roomId = 'room1' }) {
           <div className="control-group">
             <label>Font Size:</label>
             <select value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))}>
-              
               <option value={14}>14</option>
               <option value={16}>16</option>
               <option value={18}>18</option>
@@ -106,14 +109,14 @@ export default function CodeEditor({ roomId = 'room1' }) {
 
         <Editor
           height="80vh"
-          defaultLanguage={language}
-          language={language}
+          language={language} // dynamic language switching
           value={code}
           onChange={handleChange}
           theme="vs-dark"
           options={{
-            fontSize: fontSize,
+            fontSize,
             minimap: { enabled: false },
+            automaticLayout: true,
           }}
         />
       </div>

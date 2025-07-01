@@ -9,7 +9,7 @@ import { Server } from 'socket.io';
 dotenv.config();
 
 const app = express();
-const server = createServer(app); // ✅ Use consistent server variable
+const server = createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' },
 });
@@ -35,18 +35,15 @@ const languageMap = {
 
 const rooms = {}; // { roomId: { code, language } }
 
-// --- Socket.IO: Real-time Collaboration ---
 io.on('connection', (socket) => {
-  console.log(`🔌 User connected: ${socket.id}`);
+  console.log(`🔌 Connected: ${socket.id}`);
 
   socket.on('join-room', ({ roomId }) => {
     socket.join(roomId);
-    console.log(`👥 ${socket.id} joined room ${roomId}`);
-
+    console.log(`🟢 ${socket.id} joined ${roomId}`);
     if (!rooms[roomId]) {
       rooms[roomId] = { code: '// Start coding', language: 'javascript' };
     }
-
     socket.emit('sync', rooms[roomId]);
   });
 
@@ -61,11 +58,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log(`❌ User disconnected: ${socket.id}`);
+    console.log(`❌ Disconnected: ${socket.id}`);
   });
 });
 
-// --- Judge0: Code Execution API ---
 app.post('/run', async (req, res) => {
   const { code, language, roomId } = req.body;
   const language_id = languageMap[language];
@@ -97,7 +93,6 @@ app.post('/run', async (req, res) => {
           'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
         }
       });
-
       result = status.data;
       if (result.status.id >= 3) break;
       await new Promise(r => setTimeout(r, 1500));
@@ -111,18 +106,12 @@ app.post('/run', async (req, res) => {
 
     res.json({ output });
   } catch (err) {
-    console.error('❌ Execution error:', err.message);
+    console.error('❌ Execution Error:', err.message);
     res.status(500).json({ error: 'Execution failed' });
   }
 });
 
-// --- Start server locally only ---
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 5000;
-  server.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-  });
-}
-
-// Optional: export for testability or Vercel (even though WebSocket won't work there)
-export default server;
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});

@@ -1,8 +1,5 @@
-// api/run.js
+// /api/run.js
 import axios from 'axios';
-
-const JUDGE0_API = 'https://judge0-ce.p.rapidapi.com';
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 
 const languageMap = {
   javascript: 63,
@@ -17,28 +14,23 @@ const languageMap = {
   typescript: 74,
 };
 
+const JUDGE0_API = 'https://judge0-ce.p.rapidapi.com';
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Only POST allowed" });
-  }
-
   const { code, language } = req.body;
-  const language_id = languageMap[language];
-
-  if (!language_id) {
-    return res.status(400).json({ error: 'Unsupported language' });
-  }
+  const langId = languageMap[language];
+  if (!langId) return res.status(400).json({ error: 'Unsupported language' });
 
   try {
     const submission = await axios.post(`${JUDGE0_API}/submissions`, {
       source_code: code,
-      language_id,
+      language_id: langId,
       stdin: ''
     }, {
       headers: {
-        'Content-Type': 'application/json',
-        'X-RapidAPI-Key': RAPIDAPI_KEY,
-        'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+        'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
+        'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+        'Content-Type': 'application/json'
       }
     });
 
@@ -48,10 +40,11 @@ export default async function handler(req, res) {
     while (true) {
       const status = await axios.get(`${JUDGE0_API}/submissions/${token}`, {
         headers: {
-          'X-RapidAPI-Key': RAPIDAPI_KEY,
+          'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
           'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
         }
       });
+
       result = status.data;
       if (result.status.id >= 3) break;
       await new Promise(r => setTimeout(r, 1500));
@@ -59,8 +52,9 @@ export default async function handler(req, res) {
 
     const output = result.stdout || result.stderr || result.compile_output || 'No output';
     res.json({ output });
-  } catch (err) {
-    console.error('❌ Judge0 Error:', err.message);
-    res.status(500).json({ error: 'Execution failed' });
+
+  } catch (error) {
+    console.error('Judge0 error:', error);
+    res.status(500).json({ error: 'Execution error' });
   }
 }

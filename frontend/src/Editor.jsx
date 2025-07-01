@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import './codeEditor.css';
 
-// ✅ Socket.IO initialization (with Vercel's serverless path)
+// ✅ Vercel-compatible Socket.IO client
 const socket = io('https://codeditor-kappa.vercel.app', {
   path: '/api/socket_io',
   transports: ['websocket'],
@@ -18,8 +18,10 @@ export default function CodeEditor({ roomId = 'room1' }) {
   const ignoreNext = useRef(false);
 
   useEffect(() => {
+    // 🔗 Join room
     socket.emit('join-room', { roomId });
 
+    // 📥 Initial sync
     socket.on('sync', ({ code, language }) => {
       setCode(code);
       setLanguage(language);
@@ -46,6 +48,7 @@ export default function CodeEditor({ roomId = 'room1' }) {
     };
   }, [roomId]);
 
+  // ✏️ Code typing
   const handleChange = (newCode) => {
     if (ignoreNext.current) {
       ignoreNext.current = false;
@@ -55,12 +58,14 @@ export default function CodeEditor({ roomId = 'room1' }) {
     socket.emit('code-change', { roomId, code: newCode });
   };
 
+  // 🌐 Change language
   const handleLangChange = (e) => {
     const lang = e.target.value;
     setLanguage(lang);
     socket.emit('language-change', { roomId, language: lang });
   };
 
+  // ▶️ Run code
   const handleRun = async () => {
     try {
       const res = await axios.post('https://codeditor-kappa.vercel.app/api/run', {
@@ -109,7 +114,7 @@ export default function CodeEditor({ roomId = 'room1' }) {
 
         <Editor
           height="80vh"
-          language={language} // dynamic language switching
+          language={language}
           value={code}
           onChange={handleChange}
           theme="vs-dark"

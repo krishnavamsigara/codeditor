@@ -92,6 +92,9 @@ app.post('/run', async (req, res) => {
     res.status(500).json({ error: 'Execution failed' });
   }
 });
+app.get('/',async(req,res)=>{
+  res.send("created by vamsi")
+})
 
 httpServer.listen(5000, () => {
   console.log('🚀 Server running at http://localhost:5000');

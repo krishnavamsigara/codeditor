@@ -11,8 +11,13 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: '*' },
+  cors: {
+    origin: 'https://codeditor-5kih.vercel.app', // 🔁 replace with your actual Vercel frontend URL
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
 });
+
 
 app.use(cors());
 app.use(express.json());

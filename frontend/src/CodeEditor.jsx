@@ -1,10 +1,9 @@
-import  { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import io from 'socket.io-client';
-import './CodeEditor.css';
 
-const baseURL = process.env.REACT_APP_API_URL;
+const baseURL = import.meta.env.VITE_API_URL;
 
 
 const socket = io(baseURL, {
@@ -69,10 +68,7 @@ export default function CodeEditor({ roomId = 'room1' }) {
 
   const handleRun = async () => {
     try {
-      const res = await axios.post(`${baseURL}/run`, {
-        code,
-        language,
-      });
+      const res = await axios.post(`${baseURL}/run`, { code, language });
       const out = res.data.output;
       setOutput(out);
       socket.emit('output-change', { roomId, output: out });
@@ -83,11 +79,58 @@ export default function CodeEditor({ roomId = 'room1' }) {
     }
   };
 
+  // 👇 Styles
+  const styles = {
+    editorContainer: {
+      display: 'flex',
+      height: '100vh',
+      overflow: 'hidden',
+    },
+    editorLeft: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: '#1e1e1e',
+    },
+    toolbar: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      padding: '10px',
+      background: '#2e2e2e',
+    },
+    editorWrapper: {
+      flex: 1,
+    },
+    editorRight: {
+      width: '30%',
+      background: '#121212',
+      color: 'white',
+      padding: '10px',
+      overflowY: 'auto',
+    },
+    select: {
+      padding: '5px',
+      backgroundColor: '#1e1e1e',
+      color: 'white',
+      border: '1px solid #444',
+      borderRadius: '4px',
+    },
+    button: {
+      padding: '6px 12px',
+      backgroundColor: '#4CAF50',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+    }
+  };
+
   return (
-    <div className="editor-container">
-      <div className="editor-left">
-        <div className="toolbar">
-          <select value={language} onChange={handleLangChange}>
+    <div style={styles.editorContainer}>
+      <div style={styles.editorLeft}>
+        <div style={styles.toolbar}>
+          <select style={styles.select} value={language} onChange={handleLangChange}>
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
             <option value="cpp">C++</option>
@@ -95,16 +138,16 @@ export default function CodeEditor({ roomId = 'room1' }) {
             <option value="c">C</option>
           </select>
 
-          <select value={fontSize} onChange={handleFontSizeChange}>
+          <select style={styles.select} value={fontSize} onChange={handleFontSizeChange}>
             {[12, 14, 16, 18, 20, 24, 28].map((size) => (
               <option key={size} value={size}>{size}px</option>
             ))}
           </select>
 
-          <button onClick={handleRun}>Run</button>
+          <button style={styles.button} onClick={handleRun}>Run</button>
         </div>
 
-        <div className="editor-wrapper">
+        <div style={styles.editorWrapper}>
           <Editor
             defaultLanguage={language}
             language={language}
@@ -121,7 +164,7 @@ export default function CodeEditor({ roomId = 'room1' }) {
         </div>
       </div>
 
-      <div className="editor-right">
+      <div style={styles.editorRight}>
         <h3>Output:</h3>
         <pre>{output || 'No output yet'}</pre>
       </div>

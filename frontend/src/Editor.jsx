@@ -4,7 +4,10 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import './CodeEditor.css';
 
-const socket = io('https://codeditor-zwgy.onrender.com', {
+const baseURL = process.env.REACT_APP_API_URL;
+
+
+const socket = io(baseURL, {
   transports: ['websocket'],
   autoConnect: true,
 });
@@ -66,7 +69,7 @@ export default function CodeEditor({ roomId = 'room1' }) {
 
   const handleRun = async () => {
     try {
-      const res = await axios.post('https://codeditor-zwgy.onrender.com/run', {
+      const res = await axios.post(`${baseURL}/run`, {
         code,
         language,
       });

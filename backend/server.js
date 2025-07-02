@@ -10,44 +10,43 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
 const io = new Server(httpServer, {
   cors: {
-    origin: 'https://codeditor-5kih.vercel.app', // 🔁 replace with your actual Vercel frontend URL
+    origin: 'https://codeditor-5kih.vercel.app', // ✅ your frontend Vercel URL
     methods: ['GET', 'POST'],
     credentials: true,
   },
 });
 
+// ✅ Proper CORS middleware
+app.use(cors({
+  origin: 'https://codeditor-5kih.vercel.app',
+  methods: ['GET', 'POST'],
+  credentials: true,
+}));
 
-app.use(cors());
 app.use(express.json());
 
 const PISTON_API = 'https://emkc.org/api/v2/piston';
-
 const languageMap = {
   javascript: 'javascript',
   python: 'python3',
   c: 'c',
   cpp: 'cpp',
   java: 'java',
-  go: 'go',
-  php: 'php',
-  ruby: 'ruby',
-  rust: 'rust',
-  typescript: 'typescript',
 };
 
-const rooms = {}; // Room-wise sync
+const rooms = {};
 
-// --- Socket.IO ---
 io.on('connection', (socket) => {
   console.log(`🔌 Connected: ${socket.id}`);
 
   socket.on('join-room', ({ roomId }) => {
     socket.join(roomId);
-    console.log(`📥 ${socket.id} joined ${roomId}`);
     if (!rooms[roomId]) rooms[roomId] = { code: '// Start coding', language: 'javascript' };
     socket.emit('sync', rooms[roomId]);
+    console.log(`📥 ${socket.id} joined ${roomId}`);
   });
 
   socket.on('code-change', ({ roomId, code }) => {
@@ -69,7 +68,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// --- Run code via Piston ---
+// ✅ Run code endpoint
 app.post('/run', async (req, res) => {
   const { code, language } = req.body;
   const pistonLang = languageMap[language];
@@ -92,10 +91,12 @@ app.post('/run', async (req, res) => {
     res.status(500).json({ error: 'Execution failed' });
   }
 });
-app.get('/',async(req,res)=>{
-  res.send("created by vamsi")
-})
+
+// Default route
+app.get('/', (req, res) => {
+  res.send('🚀 Code Runner API by Vamsi');
+});
 
 httpServer.listen(5000, () => {
-  console.log('🚀 Server running at http://localhost:5000');
+  console.log('🚀 Server running on http://localhost:5000');
 });

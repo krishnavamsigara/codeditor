@@ -1,34 +1,31 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import io from 'socket.io-client';
 import axios from 'axios';
-import './codeEditor.css';
+import io from 'socket.io-client';
+import './CodeEditor.css';
 
-// ✅ Vercel-compatible Socket.IO client
-const socket = io('https://codeditor-kappa.vercel.app', {
-  path: '/api/socket_io',
+const socket = io('http://localhost:5000', {
   transports: ['websocket'],
+  autoConnect: true,
 });
 
 export default function CodeEditor({ roomId = 'room1' }) {
   const [code, setCode] = useState('// Start coding');
   const [output, setOutput] = useState('');
   const [language, setLanguage] = useState('javascript');
-  const [fontSize, setFontSize] = useState(14);
-  const ignoreNext = useRef(false);
+  const [fontSize, setFontSize] = useState(16);
+  const preventEmit = useRef(false);
 
   useEffect(() => {
-    // 🔗 Join room
     socket.emit('join-room', { roomId });
 
-    // 📥 Initial sync
     socket.on('sync', ({ code, language }) => {
       setCode(code);
       setLanguage(language);
     });
 
     socket.on('code-change', (newCode) => {
-      ignoreNext.current = true;
+      preventEmit.current = true;
       setCode(newCode);
     });
 
@@ -36,99 +33,94 @@ export default function CodeEditor({ roomId = 'room1' }) {
       setLanguage(newLang);
     });
 
-    socket.on('execution-result', (result) => {
-      setOutput(result);
+    socket.on('output-change', (newOutput) => {
+      setOutput(newOutput);
     });
 
     return () => {
       socket.off('sync');
       socket.off('code-change');
       socket.off('language-change');
-      socket.off('execution-result');
+      socket.off('output-change');
     };
   }, [roomId]);
 
-  // ✏️ Code typing
   const handleChange = (newCode) => {
-    if (ignoreNext.current) {
-      ignoreNext.current = false;
+    if (preventEmit.current) {
+      preventEmit.current = false;
       return;
     }
     setCode(newCode);
     socket.emit('code-change', { roomId, code: newCode });
   };
 
-  // 🌐 Change language
   const handleLangChange = (e) => {
     const lang = e.target.value;
     setLanguage(lang);
     socket.emit('language-change', { roomId, language: lang });
   };
 
-  // ▶️ Run code
+  const handleFontSizeChange = (e) => {
+    setFontSize(parseInt(e.target.value));
+  };
+
   const handleRun = async () => {
     try {
-      const res = await axios.post('https://codeditor-kappa.vercel.app/api/run', {
+      const res = await axios.post('http://localhost:5000/run', {
         code,
         language,
-        roomId,
       });
-      setOutput(res.data.output);
+      const out = res.data.output;
+      setOutput(out);
+      socket.emit('output-change', { roomId, output: out });
     } catch (err) {
-      setOutput('❌ Error running code');
+      const errMsg = 'Error running code';
+      setOutput(errMsg);
+      socket.emit('output-change', { roomId, output: errMsg });
     }
   };
 
   return (
-    <div className="main-container">
-      <div className="editor-section">
-        <div className="controls">
-          <div className="control-group">
-            <label>Language:</label>
-            <select value={language} onChange={handleLangChange}>
-              <option value="javascript">JavaScript</option>
-              <option value="python">Python</option>
-              <option value="cpp">C++</option>
-              <option value="java">Java</option>
-              <option value="c">C</option>
-              <option value="go">Go</option>
-              <option value="php">PHP</option>
-              <option value="ruby">Ruby</option>
-              <option value="rust">Rust</option>
-              <option value="typescript">TypeScript</option>
-            </select>
-          </div>
+    <div className="editor-container">
+      <div className="editor-left">
+        <div className="toolbar">
+          <select value={language} onChange={handleLangChange}>
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="cpp">C++</option>
+            <option value="java">Java</option>
+            <option value="c">C</option>
+          </select>
 
-          <div className="control-group">
-            <label>Font Size:</label>
-            <select value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))}>
-              <option value={14}>14</option>
-              <option value={16}>16</option>
-              <option value={18}>18</option>
-              <option value={20}>20</option>
-            </select>
-          </div>
+          <select value={fontSize} onChange={handleFontSizeChange}>
+            {[12, 14, 16, 18, 20, 24, 28].map((size) => (
+              <option key={size} value={size}>{size}px</option>
+            ))}
+          </select>
 
           <button onClick={handleRun}>Run</button>
         </div>
 
-        <Editor
-          height="80vh"
-          language={language}
-          value={code}
-          onChange={handleChange}
-          theme="vs-dark"
-          options={{
-            fontSize,
-            minimap: { enabled: false },
-            automaticLayout: true,
-          }}
-        />
+        <div className="editor-wrapper">
+          <Editor
+            defaultLanguage={language}
+            language={language}
+            value={code}
+            onChange={handleChange}
+            theme="vs-dark"
+            options={{
+              fontSize,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+            }}
+          />
+        </div>
       </div>
 
-      <div className="output-section">
-        <h3>Output</h3>
-        <pre>{output}</pre>
+      <div className="editor-right">
+        <h3>Output:</h3>
+        <pre>{output || 'No output yet'}</pre>
       </div>
     </div>
   );
